@@ -47,7 +47,7 @@ class Grup:
 
 if __name__ == "__main__":
     with open("./02/Dades primera sessió.csv", "r") as file:
-        csv_reader = csv.reader(file, delimiter=";")
+        csv_reader = csv.reader(file)
         grups = dict()
         for row in csv_reader:
             if row[6] not in grups:

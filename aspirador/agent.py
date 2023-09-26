@@ -52,7 +52,14 @@ class AspiradorTaula(Aspirador):
 
 class AspiradorReflex(Aspirador):
     def actua(self, percepcio: entorn.Percepcio) -> entorn.Accio:
-        """ IMPLEMENTAR """
+        if percepcio[Sensor.ESTAT] == EstatHabitacio.BRUT:
+            return AccionsAspirador.ASPIRA
+        else:
+            if percepcio[Sensor.LLOC] == Localitzacio.HABITACIO_ESQ:
+                return AccionsAspirador.DRETA
+            else:
+                return AccionsAspirador.ESQUERRA
+    
 
 
 class AspiradorMemoria(Aspirador):
