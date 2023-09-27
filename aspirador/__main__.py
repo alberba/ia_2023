@@ -4,7 +4,7 @@ sys.path.append("c:\\Albert\\ia_2023")
 from aspirador import agent, joc
 
 def main():
-    aspirador = agent.AspiradorTaula()
+    aspirador = agent.AspiradorMemoria()
     hab = joc.Casa([aspirador])
     hab.comencar()
 
