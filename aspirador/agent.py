@@ -68,7 +68,7 @@ class AspiradorMemoria(Aspirador):
             return AccionsAspirador.ASPIRA
         else:
             if not self.get_memoria(1) :
-                if percepcio[Sensor.LLOC] == Localitzacio.HABITACIO_ESQ and not self.get_memoria(1):
+                if percepcio[Sensor.LLOC] == Localitzacio.HABITACIO_ESQ:
                     self.set_memoria(AccionsAspirador.ESQUERRA)
                     return AccionsAspirador.DRETA
                 else:
