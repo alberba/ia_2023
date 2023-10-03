@@ -40,6 +40,7 @@ class Agent:
         return mem
 
     def set_posicio(self, posicio: tuple) -> None:
+        """ NO ES POT CRIDAR """
         self._posicio_pintar = posicio
 
     def set_memoria(self, info) -> None:
