@@ -1,3 +1,6 @@
+import sys
+sys.path.append("c:\\Albert\\ia_2023")
+
 from quiques import agent_amplada, agent_profunditat, joc
 
 

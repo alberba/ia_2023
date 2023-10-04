@@ -13,4 +13,10 @@ class BarcaAmplada(Barca):
     def actua(
             self, percepcio: entorn.Percepcio
     ) -> entorn.Accio | tuple[entorn.Accio, object]:
-        pass
+        
+        self.__oberts = [Estat(percepcio[SENSOR.LLOC], percepcio[SENSOR.LLOPS_ESQ], percepcio[SENSOR.POLLS_ESQ])]
+        self.__tancats = []
+        while self.__oberts != []:
+            self.__oberts.pop()
+            if 
+        
