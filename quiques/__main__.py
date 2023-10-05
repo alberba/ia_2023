@@ -5,7 +5,7 @@ from quiques import agent_amplada, agent_profunditat, joc
 
 
 def main():
-    barca = agent_profunditat.BarcaProfunditat()
+    barca = agent_amplada.BarcaAmplada()
     illes = joc.Illes([barca])
     illes.comencar()
 
