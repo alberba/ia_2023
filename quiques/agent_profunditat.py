@@ -19,7 +19,7 @@ class BarcaProfunditat(Barca):
         self.__oberts = [estat]
         self.__tancats = []
         while self.__oberts != []:
-            estat_actual = self.__oberts.pop()
+            estat_actual = self.__oberts.pop(len(self.__oberts) - 1)
             if estat_actual in self.__tancats:
                 continue
             if estat_actual.es_segur():
@@ -28,7 +28,7 @@ class BarcaProfunditat(Barca):
                     return True
                 else:
                     estats_fills = estat_actual.genera_fill()
-                    self.__oberts = estats_fills + self.__oberts
+                    self.__oberts = self.__oberts + estats_fills
                     self.__tancats.append(estat_actual)
             else:
                 self.__tancats.append(estat_actual)

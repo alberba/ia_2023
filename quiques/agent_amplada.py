@@ -14,7 +14,7 @@ class BarcaAmplada(Barca):
         self.__oberts = [estat]
         self.__tancats = []
         while self.__oberts != []:
-            estat_actual = self.__oberts.pop()
+            estat_actual = self.__oberts.pop(0)
             if estat_actual in self.__tancats:
                 continue
             if estat_actual.es_segur():
