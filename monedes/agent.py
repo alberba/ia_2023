@@ -6,6 +6,7 @@ Solució:
     " XXXC"
 """
 import copy
+from queue import PriorityQueue
 
 from ia_2022 import agent, entorn
 from monedes.entorn import AccionsMoneda, SENSOR
@@ -13,77 +14,105 @@ from monedes.entorn import AccionsMoneda, SENSOR
 SOLUCIO = " XXXC"
 
 class Estat:
-    def __init__(self, monedas: str, pare = None, accions_previes = None) -> None:
-        if accions_previes is None:
-            accions_previes = []
+    def __init__(self, monedas: str, pes: int, pare = None, accions_previes = None):
+        self.__monedas = list(monedas)
+        self.__pare = pare
+        self.__pes = pes
 
-        self.monedas = list(monedas)
-        self.pare = pare
-        self.accions_previes = accions_previes
-        self.accions_pos = []
-        self.coste = 0
-        self.heuristica = 0
+    def __hash__(self):
+        return hash(tuple(self.__monedas))
+    
+    @property
+    def info(self):
+        return self.__monedas
+    
+    def __eq__(self, other) -> bool:
+        return self.__monedas == other.__monedas
 
     def es_meta(self) -> bool:
-        return self.monedas == list(SOLUCIO)
+        return self.__monedas == list(SOLUCIO)
     
-    def genera_fills(self, tancats: list) -> list:
-        posEspai = self.monedas.index(" ")
-        self.accions_pos += self.genera_fills_botar(posEspai)
-        self.accions_pos += self.genera_fills_desplaçar(posEspai)
-        self.accions_pos += self.generar_fills_girar()
+    def genera_fills(self) -> list:
+        fills = list()
+        posEspai = self.__monedas.index(" ")
 
-        estats_generats = []
+        fills += self.genera_fills_botar(posEspai)
+        fills += self.genera_fills_desplaçar(posEspai)
+        fills += self.generar_fills_girar()
 
-        for accio, posMonedaAccion, coste in self.accions_pos:
-            if accio in tancats:
-                continue
-            nou_estat = copy.deepcopy(self)
-            nou_estat.pare = (self)
-            # La estructura de accions_previes sera una lista de listas, donde
-            # cada lista tendra la posicion de la moneda que va a actuar y el coste
-            # Si coste es 1, significa que se desplaza, 2 si gira y 3 si salta
-            nou_estat.accions_previes.append([posMonedaAccion, coste])
-
-            nou_estat.monedas = accio
-            nou_estat.coste += coste
-            nou_estat.heuristica = nou_estat.calcular_heuristica(accio.index(" "))
-            
-            estats_generats.append(nou_estat)
-
-        return estats_generats
-
-    def genera_fills_botar(self, posEspai) -> list[str, int, int]:
-        poss_accions = []
-        for offset in [-2, 2]:
-            if 0 <= posEspai + offset < len(self.monedas):
-                accio = self.monedas.copy()
-                accio[posEspai], accio[posEspai + offset] = accio[posEspai + offset], accio[posEspai]
-                accio[posEspai] = girar_moneda(accio[posEspai])
-                poss_accions.append([accio, posEspai + offset, 3])
-        return poss_accions
+        return fills
             
     def genera_fills_desplaçar(self, posEspai) -> list[str, int, int]:
         pos_accions = []
         for offset in [-1, 1]:
-            if 0 <= posEspai + offset < len(self.monedas):
-                accio = self.monedas.copy()
+            if 0 <= posEspai + offset < len(self.__monedas):
+                accio = self.__monedas.copy()
                 accio[posEspai], accio[posEspai + offset] = accio[posEspai + offset], accio[posEspai]
-                pos_accions.append([accio, posEspai + offset, 1])
+                pos_accions.append(
+                    Estat(
+                        accio,
+                        self.__pes + 1,
+                        (self, (AccionsMoneda.DESPLACAR, posEspai + offset))
+                    )
+                )
         return pos_accions
     
     def generar_fills_girar(self) -> list[str, int, int]:
         pos_accions = []
-        for i in range(len(self.monedas)):
-            accio = self.monedas.copy()
+        for i in range(len(self.__monedas)):
+            accio = self.__monedas.copy()
             if not accio[i] == " ":
-                accio[i] = girar_moneda(accio[i])
-                pos_accions.append([accio, i, 2])
+                accio[i] = self.girar_moneda(accio[i])
+                pos_accions.append(
+                    Estat(
+                        accio,
+                        self.__pes + 2,
+                        (self, (AccionsMoneda.GIRAR, i))
+                    )
+                )
         return pos_accions
     
-    def calcular_heuristica(self, pos_espacio) -> int:
-        vx = sum(1 for i in range(1, len(SOLUCIO)) if self.monedas[i] != SOLUCIO[i])
-        return vx + pos_espacio
+    def genera_fills_botar(self, posEspai) -> list[str, int, int]:
+        poss_accions = list()
+        for offset in [-2, 2]:
+            if 0 <= posEspai + offset < len(self.__monedas):
+                accio = self.__monedas.copy()
+                accio[posEspai], accio[posEspai + offset] = accio[posEspai + offset], accio[posEspai]
+                accio[posEspai] = self.girar_moneda(accio[posEspai])
+                poss_accions.append(
+                    Estat(
+                        accio,
+                        self.__pes + 3,
+                        (self, (AccionsMoneda.BOTAR, posEspai + offset))
+                    )
+                )
+        return poss_accions
+    
+    def calcular_heuristica(self) -> int:
+        pos_espacio = self.__monedas.index(" ")
+        vx = sum(1 for i in range(1, len(SOLUCIO)) if self.__monedas[i] != SOLUCIO[i])
+        return vx + pos_espacio + self.__pes
+    
+    def girar_moneda(self, moneda):
+        if moneda == "X":
+            moneda = "C"
+        elif moneda == "C":
+            moneda = "X"
+        return moneda
+    
+    @property
+    def pare(self):
+        return self.__pare
+    
+    @pare.setter
+    def pare(self, pare):
+        self.__pare = pare
+
+    def __str__(self):
+        return f"Monedes: {self.__monedas}, pes: {self.__pes}"
+    
+    def __lt__(self, other):
+        return False
 
 class AgentMoneda(agent.Agent):
     def __init__(self):
@@ -95,54 +124,51 @@ class AgentMoneda(agent.Agent):
     def pinta(self, display):
         print(self._posicio_pintar)
 
-    def cerca_A(self, estat: Estat):
-        self.__oberts = [estat]
-        self.__tancats = []
-        while self.__oberts != []:
-            # Buscar Estado menor coste
-            estat_actual = estat_menor_fn(self.__oberts)
-            self.__oberts.remove(estat_actual)
+    def cerca_A(self, estat_inicial: Estat):
+        self.__oberts = PriorityQueue()
+        self.__tancats = set()
+
+        self.__oberts.put((estat_inicial.calcular_heuristica(), estat_inicial))
+
+        estat_actual = None
+
+        while not self.__oberts.empty():
+            _, estat_actual = self.__oberts.get()
             if estat_actual in self.__tancats:
                 continue
+
             if estat_actual.es_meta():
-                self.__accions = estat_actual.accions_previes
-                return True
-            else:
-                estats_fills = estat_actual.genera_fills(self.__tancats)
-                self.__oberts = self.__oberts + estats_fills
-                self.__tancats.append(estat_actual)
+                break
+
+            estats_fills = estat_actual.genera_fills()
+            for estat_f in estats_fills:
+                self.__oberts.put((estat_f.calcular_heuristica(), estat_f))
+            
+            self.__tancats.add(estat_actual)
+        
+        if estat_actual.es_meta():
+            accions = list()
+            iterador = estat_actual
+            while iterador.pare is not None:
+                pare, accio = iterador.pare
+
+                accions.append(accio)
+                iterador = pare
+            self.__accions = accions
         return False
 
     def actua(
         self, percepcio: entorn.Percepcio
     ) -> entorn.Accio | tuple[entorn.Accio, object]:
         # Tiene que devolver una acción y la posición en la que actua
-        estat = Estat(percepcio[SENSOR.MONEDES])
+        estat = Estat(percepcio[SENSOR.MONEDES], 0, pare=None)
 
         if self.__accions is None:
             self.cerca_A(estat)
-        if len(self.__accions) == 0:
-            return AccionsMoneda.RES
+
+        if self.__accions:
+            accio = self.__accions.pop()
+            return accio[0], accio[1]
         else:
-            accio = self.__accions.pop(0)
-            posMonedaAccion, coste = accio
-            if coste == 1:
-                return AccionsMoneda.DESPLACAR, posMonedaAccion
-            elif coste == 2:
-                return AccionsMoneda.GIRAR, posMonedaAccion
-            else:
-                return AccionsMoneda.BOTAR, posMonedaAccion
+            return AccionsMoneda.RES, None
 
-def girar_moneda(moneda):
-    if moneda == "X":
-        moneda = "C"
-    elif moneda == "C":
-        moneda = "X"
-    return moneda
-
-def estat_menor_fn(estats: list[Estat]) -> Estat:
-    estat_menor = estats[0]
-    for estat in estats:
-        if (estat.coste + estat.heuristica) < (estat_menor.coste + estat_menor.heuristica):
-            estat_menor = estat
-    return estat_menor

@@ -17,9 +17,9 @@ class Moneda(joc.JocNoGrafic):
 
     @staticmethod
     def __gira(caract: str):
-        if caract is "C":
+        if caract == "C":
             return "X"
-        elif caract is "X":
+        elif caract == "X":
             return "C"
         else:
             return caract
