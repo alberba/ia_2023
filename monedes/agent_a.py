@@ -30,6 +30,7 @@ class MonedasA(AgentMoneda):
     def actua(
         self, percepcio: entorn.Percepcio
     ) -> entorn.Accio | tuple[entorn.Accio, object]:
+        # Tiene que devolver una acción y la posición en la que actua
         estat = Estat("CX CX")
 
         if self.__accions is None:
@@ -37,7 +38,14 @@ class MonedasA(AgentMoneda):
         if len(self.__accions) == 0:
             return AccionsMoneda.RES
         else:
-            if self.__accions.
+            accio = self.__accions.pop()
+            coste, posMonedaAccion = accio
+            if coste == 1:
+                return AccionsMoneda.DESPLACAR, posMonedaAccion
+            elif coste == 2:
+                return AccionsMoneda.GIRAR, posMonedaAccion
+            else:
+                return AccionsMoneda.SALTAR, posMonedaAccion
 
 def estat_menor_fn(estats: list[Estat]) -> Estat:
     estat_menor = estats[0]
