@@ -1,8 +1,12 @@
+import sys
+sys.path.append("c:\\Albert\\ia_2023")
+
 from practica1 import agent, joc
+from practica1.agent_profunditat import AgentProfunditat
 
 
 def main():
-    quatre = joc.Taulell([agent.Agent("Miquel")])
+    quatre = joc.Taulell([AgentProfunditat("Hola")])
     quatre.comencar()
 
 
