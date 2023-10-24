@@ -32,7 +32,7 @@ class Estat:
         self.__pare = pare
 
     def __hash__(self):
-        return hash((self.__lenTablero, self.__tablero))
+        return hash((self.__lenTablero, str(self.__tablero)))
 
     def __eq__(self, other):
         return self.__tablero == other.tablero

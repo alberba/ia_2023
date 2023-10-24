@@ -1,32 +1,39 @@
 import copy
+from queue import PriorityQueue
 
 from practica1.agent import Agent, Estat
 from ia_2022 import entorn
 from practica1.entorn import Accio, SENSOR
 
-class AgentProfunditat(Agent):
+class AgentA(Agent):
     def __init__(self, nom):
-        super(AgentProfunditat, self).__init__(nom)
+        super(AgentA, self).__init__(nom)
         self.__oberts = None
         self.__tancats = None
         self.__accions = None
 
-    def cerca_profunditat(self, estat: Estat):
-        self.__oberts = [estat]
+    def cerca_A(self, estat_inicial: Estat):
+        self.__oberts = PriorityQueue()
         self.__tancats = set()
         estat_actual = None
 
-        while self.__oberts != []:
-            estat_actual = self.__oberts.pop(len(self.__oberts) - 1)
-            if estat_actual in self.__tancats:
-                continue
+        self.__oberts.put((estat_inicial.calcular_heuristica(), estat_inicial))
+        estat_actual = None
+
+        while not self.__oberts.empty():
+            _, estat_actual = self.__oberts.get()
+            for estat_tancat in self.__tancats:
+                if estat_actual == estat_tancat:
+                    continue
             if estat_actual.es_meta():
                 break
-            else:
-                estats_fills = estat_actual.genera_fills()
-                estats_fills.reverse()
-                self.__oberts = self.__oberts + estats_fills
-                self.__tancats.add(estat_actual)
+
+            estats_fills = estat_actual.genera_fills()
+            estats_fills.reverse()
+            for estat in estats_fills:
+                self.__oberts.put((estat, estat))
+
+            self.__tancats.add(estat_actual)
         if estat_actual.es_meta():
             accions = list()
             iterador = estat_actual
@@ -40,10 +47,10 @@ class AgentProfunditat(Agent):
     def actua(
             self, percepcio: entorn.Percepcio
     ) -> entorn.Accio | tuple[entorn.Accio, object]:
-        estat = EstatProfunditat(percepcio[SENSOR.MIDA])
+        estat = EstatA(percepcio[SENSOR.MIDA], 0)
         
         if self.__accions is None:
-            self.cerca_profunditat(estat)
+            self.cerca_A(estat)
 
         if self.__accions:
             accio = self.__accions.pop()
@@ -52,9 +59,10 @@ class AgentProfunditat(Agent):
             return Accio.ESPERAR
 
 
-class EstatProfunditat(Estat):
-    def __init__(self, filas_columnas, heuristica=4, pare=None):
+class EstatA(Estat):
+    def __init__(self, filas_columnas, pes: int, heuristica=4, pare=None):
         super().__init__(filas_columnas, heuristica, pare)
+        self.__pes = pes
 
 
     def es_meta(self):
@@ -65,8 +73,9 @@ class EstatProfunditat(Estat):
             for fila in range(self.lenTablero):
                 if self.tablero[columna][fila] == 1:
                     h = self.mirar_combinacion(columna, fila)
-                    if h < self.heuristica:
-                        self.heuristica = h
+                    if h + self.__pes < self.heuristica:
+                        self.heuristica = h + self.__pes
+            
 
     def genera_fills(self) -> list:
         estats_generats = []
