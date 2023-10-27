@@ -60,7 +60,7 @@ class EstatProfunditat(Estat):
     def es_meta(self):
         return self.heuristica == 0
 
-    def calcular_heuristica (self):
+    def calcular_heuristica_fn (self):
         for columna in range(self.lenTablero):
             for fila in range(self.lenTablero):
                 if self.tablero[columna][fila] == 1:
@@ -78,7 +78,7 @@ class EstatProfunditat(Estat):
                     nou_estat.pare = (self, (columna, fila))
 
                     nou_estat.tablero[columna][fila] = 1
-                    nou_estat.calcular_heuristica()
+                    nou_estat.calcular_heuristica_fn()
                     estats_generats.append(nou_estat)
         
         return estats_generats

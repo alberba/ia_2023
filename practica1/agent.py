@@ -44,7 +44,7 @@ class Estat:
         return self.__heuristica == 0
 
     @abc.abstractmethod
-    def calcular_heuristica(self) -> int:
+    def calcular_heuristica_fn(self) -> int:
         pass
 
     @abc.abstractmethod

@@ -17,7 +17,7 @@ class AgentA(Agent):
         self.__tancats = set()
         estat_actual = None
 
-        self.__oberts.put((estat_inicial.calcular_heuristica(), estat_inicial))
+        self.__oberts.put((estat_inicial.fn, estat_inicial))
         estat_actual = None
 
         while not self.__oberts.empty():
@@ -29,12 +29,13 @@ class AgentA(Agent):
                 break
 
             estats_fills = estat_actual.genera_fills()
-            estats_fills.reverse()
             for estat in estats_fills:
-                self.__oberts.put((estat, estat))
+                if estat not in self.__tancats:
+                    self.__oberts.put((estat.fn, estat))
 
             self.__tancats.add(estat_actual)
         if estat_actual.es_meta():
+            estat_actual.calcular_heuristica_fn()
             accions = list()
             iterador = estat_actual
             while iterador.pare is not None:
@@ -63,19 +64,20 @@ class EstatA(Estat):
     def __init__(self, filas_columnas, pes: int, heuristica=4, pare=None):
         super().__init__(filas_columnas, heuristica, pare)
         self.__pes = pes
+        self.__fn = self.heuristica + self.__pes
 
 
     def es_meta(self):
         return self.heuristica == 0
 
-    def calcular_heuristica (self):
+    def calcular_heuristica_fn (self):
         for columna in range(self.lenTablero):
             for fila in range(self.lenTablero):
                 if self.tablero[columna][fila] == 1:
                     h = self.mirar_combinacion(columna, fila)
-                    if h + self.__pes < self.heuristica:
-                        self.heuristica = h + self.__pes
-            
+                    if h < self.heuristica:
+                        self.heuristica = h
+        self.fn = self.heuristica + self.__pes
 
     def genera_fills(self) -> list:
         estats_generats = []
@@ -87,7 +89,8 @@ class EstatA(Estat):
                     nou_estat.pare = (self, (columna, fila))
 
                     nou_estat.tablero[columna][fila] = 1
-                    nou_estat.calcular_heuristica()
+                    nou_estat.pes += 1
+                    nou_estat.calcular_heuristica_fn()
                     estats_generats.append(nou_estat)
         
         return estats_generats
@@ -120,19 +123,35 @@ class EstatA(Estat):
         heuristica = 3
         if fila + 3 < self.lenTablero:
             if columna + 3 < self.lenTablero:
-                for i in range(columna + 1, columna + 4):
-                    for j in range(fila + 1, fila + 4):
-                        if self.tablero[i][j] == 1:
-                            heuristica -= 1
+                for i in range(1, 4):
+                    if self.tablero[i + columna][i + fila] == 1:
+                        heuristica -= 1
         return heuristica
     
     def mirar_combinacionDiagonalUp(self, columna: int, fila: int) -> int:
         heuristica = 3
         if fila - 3 >= 0:
             if columna +3 < self.lenTablero:
-                for i in range(columna, columna + 4):
-                    for j in range(fila, fila + 4, -1):
-                        if self.tablero[i][j] == 1:
-                            heuristica -= 1
+                for i in range(1, 4):
+                    if self.tablero[columna + i][fila - i] == 1:
+                        heuristica -= 1
         return heuristica
     
+    @property
+    def pes(self):
+        return self.__pes
+    
+    @pes.setter
+    def pes(self, pes):
+        self.__pes = pes
+
+    @property
+    def fn(self):
+        return self.__fn
+    
+    @fn.setter
+    def fn(self, fn):
+        self.__fn = fn
+    
+    def __lt__(self, other):
+        return False
