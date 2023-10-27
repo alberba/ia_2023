@@ -62,7 +62,8 @@ class AgentA(Agent):
 
 class EstatA(Estat):
     def __init__(self, filas_columnas, pes: int, heuristica=4, pare=None):
-        super().__init__(filas_columnas, heuristica, pare)
+        super().__init__(filas_columnas, pare)
+        self.__heuristica = heuristica
         self.__pes = pes
         self.__fn = self.heuristica + self.__pes
 
@@ -155,3 +156,11 @@ class EstatA(Estat):
     
     def __lt__(self, other):
         return False
+    
+    @property
+    def heuristica(self):
+        return self.__heuristica
+    
+    @heuristica.setter
+    def heuristica(self, heuristica):
+        self.__heuristica = heuristica

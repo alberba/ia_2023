@@ -24,11 +24,10 @@ class Agent(joc.Agent):
         pass
 
 class Estat:
-    def __init__(self, filas_columnas: tuple[int, int], heuristica=4, pare=None):
+    def __init__(self, filas_columnas: tuple[int, int], pare=None):
         
         self.__lenTablero = filas_columnas[0]
         self.__tablero = [[0 for _ in range(filas_columnas[0])] for _ in range(filas_columnas[1])]
-        self.__heuristica = heuristica
         self.__pare = pare
 
     def __hash__(self):
@@ -62,14 +61,6 @@ class Estat:
     @pare.setter
     def pare(self, pare):
         self.__pare = pare
-
-    @property
-    def heuristica(self):
-        return self.__heuristica
-    
-    @heuristica.setter
-    def heuristica(self, heuristica):
-        self.__heuristica = heuristica
 
     @property
     def lenTablero(self):

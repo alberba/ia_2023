@@ -54,7 +54,8 @@ class AgentProfunditat(Agent):
 
 class EstatProfunditat(Estat):
     def __init__(self, filas_columnas, heuristica=4, pare=None):
-        super().__init__(filas_columnas, heuristica, pare)
+        super().__init__(filas_columnas, pare)
+        self.__heuristica = heuristica
 
 
     def es_meta(self):
@@ -126,4 +127,12 @@ class EstatProfunditat(Estat):
                         if self.tablero[i][j] == 1:
                             heuristica -= 1
         return heuristica
+    
+    @property
+    def heuristica(self):
+        return self.__heuristica
+    
+    @heuristica.setter
+    def heuristica(self, heuristica):
+        self.__heuristica = heuristica
     
