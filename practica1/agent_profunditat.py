@@ -87,45 +87,97 @@ class EstatProfunditat(Estat):
     # Cuando encuentra una pieza colocada, comprueba las siguientes 3 casillas horizontalmente, diagonalmente y verticalmente 
     # para calcular la heuristica correspondiente
     def mirar_combinacion(self, columna, fila) -> int:
-        heuristica_menor = 3
-        heuristica_menor = min(heuristica_menor, self.mirar_combinacionColumnas(columna, fila), self.mirar_combinacionFilas(columna, fila),
+        heuristica_menor = min(self.mirar_combinacionColumnas(columna, fila), self.mirar_combinacionFilas(columna, fila),
                                 self.mirar_combinacionDiagonalUp(columna, fila), self.mirar_combinacionDiagonalDown(columna, fila))
         return heuristica_menor
     
     def mirar_combinacionColumnas(self, columna: int, fila: int) -> int:
-        heuristica = 3
+        heuristica = 4
+      
         if columna + 3 < self.lenTablero:
-            for i in range(columna + 1, columna + 4):
-                if self.tablero[i][fila] == 1:
-                    heuristica -= 1
+            primera_ficha = 0
+
+            for i in range(columna, columna + 4):
+                
+                if primera_ficha == 0 and self.tablero[i][fila] != 0:
+                    primera_ficha = self.tablero[i][fila]
+                    
+                if primera_ficha != 0:
+
+                    if primera_ficha == self.tablero[i][fila]:
+                        heuristica -= 1
+
+                    elif primera_ficha != self.tablero[i][fila] and self.tablero[i][fila] != 0:
+                        return 4
+
         return heuristica
                 
     def mirar_combinacionFilas(self, columna: int, fila: int) -> int:
-        heuristica = 3
+        heuristica = 4
+
         if fila + 3 < self.lenTablero:
-            for j in range(fila + 1, fila + 4):
-                if self.tablero[columna][j] == 1:
-                    heuristica -= 1
+            primera_ficha = 0
+
+            for j in range(fila, fila + 4):
+                
+                if primera_ficha == 0 and self.tablero[columna][j] != 0:
+                    primera_ficha = self.tablero[columna][j]
+
+                if primera_ficha != 0:
+
+                    if primera_ficha == self.tablero[columna][j]:
+                        heuristica -= 1
+
+                    elif primera_ficha != self.tablero[columna][j] and self.tablero[columna][j] != 0:
+                        # Devuelve 4 ya que no hay ninguna combinación posible
+                        return 4
+
         return heuristica
                 
     def mirar_combinacionDiagonalDown(self, columna: int, fila: int) -> int:
-        heuristica = 3
+        heuristica = 4
+        
         if fila + 3 < self.lenTablero:
+            
             if columna + 3 < self.lenTablero:
-                for i in range(columna + 1, columna + 4):
-                    for j in range(fila + 1, fila + 4):
-                        if self.tablero[i][j] == 1:
+                primera_ficha = 0
+                
+                for i in range(0, 4):
+                    
+                    if primera_ficha == 0 and self.tablero[columna + i][fila + i] != 0:
+                        primera_ficha = self.tablero[columna + i][fila + i]
+
+                    if primera_ficha != 0:
+                    
+                        if primera_ficha == self.tablero[columna + i][fila + i]:
                             heuristica -= 1
+
+                        elif primera_ficha != self.tablero[columna + i][fila + i] and self.tablero[columna + i][fila + i] != 0:
+                            # Devuelve 4 ya que no hay ninguna combinación posible
+                            return 4
         return heuristica
     
     def mirar_combinacionDiagonalUp(self, columna: int, fila: int) -> int:
-        heuristica = 3
+        heuristica = 4
+        
         if fila - 3 >= 0:
-            if columna +3 < self.lenTablero:
-                for i in range(columna, columna + 4):
-                    for j in range(fila, fila + 4, -1):
-                        if self.tablero[i][j] == 1:
+
+            if columna + 3 < self.lenTablero:
+                primera_ficha = 0
+
+                for i in range(0, 4):
+                    
+                    if primera_ficha == 0 and self.tablero[columna + i][fila - i] != 0:
+                        primera_ficha = self.tablero[columna + i][fila - i]
+
+                    if primera_ficha != 0:
+                        
+                        if primera_ficha == self.tablero[columna + i][fila - i]:
                             heuristica -= 1
+
+                        elif primera_ficha != self.tablero[columna + i][fila - i] and self.tablero[columna + i][fila - i] != 0:
+                            # Devuelve 4 ya que no hay ninguna combinación posible
+                            return 4
         return heuristica
     
     @property

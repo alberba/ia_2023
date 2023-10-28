@@ -8,6 +8,8 @@ from practica1.agent_minimax import AgentMinimax
 
 
 def main():
+    #quatre = joc.Taulell([AgentProfunditat("Jorge")])
+    #quatre = joc.Taulell([AgentA("Jorge")])
     quatre = joc.Taulell([AgentMinimax("Albert"), AgentMinimax("Pau")])
     quatre.comencar()
 
