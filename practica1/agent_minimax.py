@@ -5,7 +5,7 @@ from ia_2022 import entorn
 from practica1.entorn import Accio, SENSOR
 
 
-PROFUNDIDAD_MAXIMA = 4
+PROFUNDIDAD_MAXIMA = 2
 class EstatMinimax(Estat):
     def __init__(self, filas_columnas, pare=None, alpha=float('-inf'), beta=float('inf'), seguents_accions=None):
         super().__init__(filas_columnas, pare)
@@ -43,9 +43,10 @@ class EstatMinimax(Estat):
         self.utilidad = 0
         for columna in range(self.lenTablero):
             for fila in range(self.lenTablero):
-                h = self.mirar_combinacion(columna, fila)
-                if h < self.heuristica:
-                    self.heuristica = h
+                if self.tablero[columna][fila] == 1 or self.tablero[columna][fila] == 2:
+                    h = self.mirar_combinacion(columna, fila)
+                    if h < self.heuristica:
+                        self.heuristica = h
 
     # Cuando encuentra una pieza colocada, comprueba las siguientes 3 casillas horizontalmente, diagonalmente y verticalmente 
     # para calcular la heuristica correspondiente
@@ -56,123 +57,301 @@ class EstatMinimax(Estat):
         return heuristica_menor
     
     def mirar_combinacionColumnas(self, columna: int, fila: int) -> int:
-        heuristica = 4
+        heuristica = 3
       
         if columna + 3 < self.lenTablero:
-            primera_ficha = 0
+            
+            for i in range(columna + 1, columna + 4):
 
-            for i in range(columna, columna + 4):
+                if self.tablero[columna][fila] == self.tablero[i][fila]:
+                    heuristica -= 1
 
-                if primera_ficha == 0 and self.tablero[i][fila] != 0:
-                    primera_ficha = self.tablero[i][fila]
+                elif self.tablero[columna][fila] != self.tablero[i][fila] and self.tablero[i][fila] != 0:
+
+                    diferencia = columna + 4 - i
+
+                    if columna - diferencia >= 0:
+
+                        for m in range (columna - 1, columna - diferencia - 1, -1):
+
+                            if self.tablero[columna][fila] == self.tablero[m][fila]:
+                                heuristica -= 1
+                            elif self.tablero[columna][fila] != self.tablero[i][fila] and self.tablero[i][fila] != 0:
+                                return 4
+                            
                     
-                if primera_ficha != 0:
-                    
-                    if primera_ficha == self.tablero[i][fila]:
-                        heuristica -= 1
-
-                    elif primera_ficha != self.tablero[i][fila] and self.tablero[i][fila] != 0:
+                    else:
                         return 4
                 
-            # Si se trata de una ficha del jugador max, sumamos a la utilidad, si no, restamos
-            if primera_ficha == 1:
-                self.utilidad += (4 - heuristica)
 
-            elif primera_ficha == 2:
-                self.utilidad -= (4 - heuristica)
+        else:
+
+            diferencia = columna + 3 - self.lenTablero
+            primer_indice = 0
+            
+            if columna - diferencia >= 0:
+
+                for i in range(columna - 1, columna - diferencia + 1, -1):
+
+                    if self.tablero[i][fila] == 1 or self.tablero[i][fila] == 2:
+                        primer_indice = i + 1
+                        break
+
+                if primer_indice == 0:
+                    primer_indice = columna - diferencia
+
+                else:
+
+                    if primer_indice + 3 > self.lenTablero:
+                        return 4
+                    
+                    else:
+                        
+                        for i in range(columna + 1, primer_indice + 4):
+                            
+                            if self.tablero[columna][fila] == self.tablero[i][fila]:
+                                heuristica -= 1
+                                
+                            elif self.tablero[columna][fila] != self.tablero[i][fila] and self.tablero[i][fila] != 0:
+                                return 4   
+                            
+            else:
+                return 4   
+            
+        # Si se trata de una ficha del jugador max, sumamos a la utilidad, si no, restamos
+        if self.tablero[columna][fila] == 1:
+            self.utilidad += (4 - heuristica)
+
+        else:
+            self.utilidad -= (4 - heuristica)
 
         return heuristica
     
 
                 
     def mirar_combinacionFilas(self, columna: int, fila: int) -> int:
-        heuristica = 4
-
+        heuristica = 3
+      
         if fila + 3 < self.lenTablero:
-            primera_ficha = 0
 
-            for j in range(fila, fila + 4):
+            for i in range(fila + 1, fila + 4):
 
-                if primera_ficha == 0 and self.tablero[columna][j] != 0:
-                    primera_ficha = self.tablero[columna][j]
+                if self.tablero[columna][fila] == self.tablero[columna][i]:
+                    heuristica -= 1
 
-                if primera_ficha != 0:
+                elif self.tablero[columna][fila] != self.tablero[columna][i] and self.tablero[columna][i] != 0:
+
+                    diferencia = fila + 4 - i
+
+                    if fila - diferencia >= 0:
+
+                        for m in range (fila - 1, fila - diferencia - 1, -1):
+
+                            if self.tablero[columna][fila] == self.tablero[columna][m]:
+                                heuristica -= 1
+
+                            elif self.tablero[columna][fila] != self.tablero[columna][m] and self.tablero[columna][m] != 0:
+                                return 4  
                     
-                    if primera_ficha == self.tablero[columna][j]:
-                        heuristica -= 1
-
-                    elif primera_ficha != self.tablero[columna][j] and self.tablero[columna][j] != 0:
-                        # Devuelve 4 ya que no hay ninguna combinación posible
+                    else:
                         return 4
+                
 
-            # Si se trata de una ficha del jugador max, sumamos a la utilidad, si no, restamos
-            if primera_ficha == 1:
-                self.utilidad += (4 - heuristica)
+        else:
 
+            diferencia = fila + 3 - self.lenTablero
+            primer_indice = 0
+            
+            if fila - diferencia >= 0:
+
+                for i in range(fila - 1, fila - diferencia + 1, -1):
+
+                    if self.tablero[columna][i] == 1 or self.tablero[columna][i] == 2:
+                        primer_indice = i + 1
+                        break
+
+                if primer_indice == 0:
+                    primer_indice = fila - diferencia
+
+                else:
+
+                    if primer_indice + 3 > self.lenTablero:
+                        return 4
+                    
+                    else:
+                        
+                        for i in range(fila + 1, primer_indice + 4):
+                            
+                            if self.tablero[columna][fila] == self.tablero[columna][i]:
+                                heuristica -= 1
+                                
+                            elif self.tablero[columna][fila] != self.tablero[columna][i] and self.tablero[columna][i] != 0:
+                                return 4   
+                            
             else:
-                self.utilidad -= (4 - heuristica)
+                return 4   
+            
+        # Si se trata de una ficha del jugador max, sumamos a la utilidad, si no, restamos
+        if self.tablero[columna][fila] == 1:
+            self.utilidad += (4 - heuristica)
 
+        else:
+            self.utilidad -= (4 - heuristica)
+            
         return heuristica
                 
     def mirar_combinacionDiagonalDown(self, columna: int, fila: int) -> int:
-        heuristica = 4
-        
+        heuristica = 3
+      
         if fila + 3 < self.lenTablero:
-            
+
             if columna + 3 < self.lenTablero:
-                primera_ficha = 0
-                
-                for i in range(0, 4):
 
-                    if primera_ficha == 0 and self.tablero[columna + i][fila + i] != 0:
-                        primera_ficha = self.tablero[columna + i][fila + i]
+                for i in range(1, 4):
+
+                    if self.tablero[columna][fila] == self.tablero[columna + i][fila + i]:
+                        heuristica -= 1
+
+                    elif self.tablero[columna][fila] != self.tablero[columna + i][fila + i] and self.tablero[columna + i][fila + i] != 0:
+
+                        diferencia = fila + 4 - i
+
+                        if fila - diferencia >= 0:
+
+                            if columna - diferencia >= 0:
+
+                                for m in range (-1, - diferencia - 1, -1):
+
+                                    if self.tablero[columna][fila] == self.tablero[columna + m][fila + m]:
+                                        heuristica -= 1
+
+                                    elif self.tablero[columna][fila] != self.tablero[columna + m][fila + m] and self.tablero[columna + m][fila + m] != 0:
+                                        return 4  
                         
-                    if primera_ficha != 0:
-
-                        if primera_ficha == self.tablero[columna + i][fila + i]:
-                            heuristica -= 1
-
-                        elif primera_ficha != self.tablero[columna + i][fila + i] and self.tablero[columna + i][fila + i] != 0:
-                            # Devuelve 4 ya que no hay ninguna combinación posible
+                        else:
                             return 4
-                    
-                # Si se trata de una ficha del jugador max, sumamos a la utilidad, si no, restamos
-                if primera_ficha == 1:
-                    self.utilidad += (4 - heuristica)
-                else:
-                    self.utilidad -= (4 - heuristica)
+                
 
+        else:
+
+            diferencia = fila + 3 - self.lenTablero
+            primer_indice = 0
+            
+            if fila - diferencia >= 0:
+
+                if columna - diferencia >= 0:
+
+                    for i in range(-1, -diferencia + 1, -1):
+
+                        if self.tablero[columna + i][fila + i] == 1 or self.tablero[columna + i][fila + i] == 2:
+                            primer_indice = i + 1
+                            break
+
+                    if primer_indice == 0:
+                        primer_indice = fila - diferencia
+
+                    else:
+
+                        if primer_indice + 3 > self.lenTablero:
+                            return 4
+                        
+                        else:
+                            
+                            for i in range(1, primer_indice + 4):
+                                
+                                if self.tablero[columna][fila] == self.tablero[columna + i][fila + i]:
+                                    heuristica -= 1
+                                    
+                                elif self.tablero[columna][fila] != self.tablero[columna + i][fila + i] and self.tablero[columna + i][fila + i] != 0:
+                                    return 4   
+                            
+            else:
+                return 4   
+            
+        # Si se trata de una ficha del jugador max, sumamos a la utilidad, si no, restamos
+        if self.tablero[columna][fila] == 1:
+            self.utilidad += (4 - heuristica)
+
+        else:
+            self.utilidad -= (4 - heuristica)
+            
         return heuristica
     
     def mirar_combinacionDiagonalUp(self, columna: int, fila: int) -> int:
-        heuristica = 4
-        
-        if fila - 3 >= 0:
+        heuristica = 3
+      
+        if fila - 3 < self.lenTablero:
 
             if columna + 3 < self.lenTablero:
-                primera_ficha = 0
 
-                for i in range(0, 4):
+                for i in range(1, 4):
 
-                    if primera_ficha == 0 and self.tablero[columna + i][fila - i] != 0:
-                        primera_ficha = self.tablero[columna + i][fila - i]
+                    if self.tablero[columna][fila] == self.tablero[columna + i][fila - i]:
+                        heuristica -= 1
+
+                    elif self.tablero[columna][fila] != self.tablero[columna + i][fila - i] and self.tablero[columna + i][fila - i] != 0:
+
+                        diferencia = columna + 4 - i
+
+                        if fila + diferencia >= 0:
+
+                            if columna - diferencia >= 0:
+
+                                for m in range (-1, - diferencia - 1, -1):
+
+                                    if self.tablero[columna][fila] == self.tablero[columna + m][fila - m]:
+                                        heuristica -= 1
+
+                                    elif self.tablero[columna][fila] != self.tablero[columna + m][fila - m] and self.tablero[columna + m][fila - m] != 0:
+                                        return 4  
                         
-                    if primera_ficha != 0:   
-                         
-                        if primera_ficha == self.tablero[columna + i][fila - i]:
-                            heuristica -= 1
-
-                        elif primera_ficha != self.tablero[columna + i][fila - i] and self.tablero[columna + i][fila - i] != 0:
-                            # Devuelve 4 ya que no hay ninguna combinación posible
+                        else:
                             return 4
-                    
-                # Si se trata de una ficha del jugador max, sumamos a la utilidad, si no, restamos
-                if primera_ficha == 1:
-                    self.utilidad += (4 - heuristica)
+                
 
-                else:
-                    self.utilidad -= (4 - heuristica)
+        else:
 
+            diferencia = columna + 3 - self.lenTablero
+            primer_indice = 0
+            
+            if fila + diferencia >= 0:
+
+                if columna - diferencia >= 0:
+
+                    for i in range(-1, -diferencia + 1, -1):
+
+                        if self.tablero[columna + i][fila - i] == 1 or self.tablero[columna + i][fila - i] == 2:
+                            primer_indice = i + 1
+                            break
+
+                    if primer_indice == 0:
+                        primer_indice = columna - diferencia
+
+                    else:
+
+                        if primer_indice + 3 > self.lenTablero or primer_indice - 3 <= 0:
+                            return 4
+                        
+                        else:
+                            
+                            for i in range(1, primer_indice + 4):
+                                
+                                if self.tablero[columna][fila] == self.tablero[columna + i][fila - i]:
+                                    heuristica -= 1
+                                    
+                                elif self.tablero[columna][fila] != self.tablero[columna + i][fila - i] and self.tablero[columna + i][fila - i] != 0:
+                                    return 4   
+                            
+            else:
+                return 4   
+            
+        # Si se trata de una ficha del jugador max, sumamos a la utilidad, si no, restamos
+        if self.tablero[columna][fila] == 1:
+            self.utilidad += (4 - heuristica)
+
+        else:
+            self.utilidad -= (4 - heuristica)
+            
         return heuristica
 
     @property
@@ -200,7 +379,7 @@ class AgentMinimax(Agent):
         super(AgentMinimax, self).__init__(nom)
         # Accions estará formado por una lista de acciones de manera cronológica estructurada de la siguiente forma:
         # [(columna, fila, fichaJugador), (columna, fila, fichaJugador), ...]
-        self.__puntuacio = 0
+        self.__tancats = set()
 
     def minimax(self, estat: EstatMinimax, torn_de_max: bool, profunditat_actual: int) -> tuple[bool, EstatMinimax]:
         if profunditat_actual == PROFUNDIDAD_MAXIMA:
@@ -239,6 +418,7 @@ class AgentMinimax(Agent):
                 if estat.alpha >= estat.beta:
                     # Podamos ya que como el padre del padre es max, no va a elegir al padre
                     break
+            self.__tancats.add(estat_fill)
         if mejor_estado:
             estat.seguents_accions += mejor_estado.seguents_accions
             estat_minimax.seguents_accions = mejor_estado.seguents_accions + estat_minimax.seguents_accions
