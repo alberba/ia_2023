@@ -17,7 +17,7 @@ class AgentA(Agent):
         self.__tancats = set()
         estat_actual = None
 
-        self.__oberts.put((estat_inicial.fn, estat_inicial))
+        self.__oberts.put((estat_inicial.heuristica, estat_inicial))
         estat_actual = None
 
         while not self.__oberts.empty():
@@ -31,7 +31,7 @@ class AgentA(Agent):
             estats_fills = estat_actual.genera_fills()
             for estat in estats_fills:
                 if estat not in self.__tancats:
-                    self.__oberts.put((estat.fn, estat))
+                    self.__oberts.put((estat.heuristica, estat))
 
             self.__tancats.add(estat_actual)
         if estat_actual.es_meta():
@@ -48,7 +48,7 @@ class AgentA(Agent):
     def actua(
             self, percepcio: entorn.Percepcio
     ) -> entorn.Accio | tuple[entorn.Accio, object]:
-        estat = EstatA(percepcio[SENSOR.MIDA], 0)
+        estat = EstatA(percepcio[SENSOR.MIDA])
         
         if self.__accions is None:
             self.cerca_A(estat)
@@ -61,11 +61,9 @@ class AgentA(Agent):
 
 
 class EstatA(Estat):
-    def __init__(self, filas_columnas, pes: int, heuristica=4, pare=None):
+    def __init__(self, filas_columnas, heuristica=4, pare=None):
         super().__init__(filas_columnas, pare)
         self.__heuristica = heuristica
-        self.__pes = pes
-        self.__fn = self.heuristica + self.__pes
 
 
     def es_meta(self):
@@ -78,7 +76,6 @@ class EstatA(Estat):
                     h = self.mirar_combinacion(columna, fila)
                     if h < self.heuristica:
                         self.heuristica = h
-        self.fn = self.heuristica + self.__pes
 
     def genera_fills(self) -> list:
         estats_generats = []
@@ -90,7 +87,6 @@ class EstatA(Estat):
                     nou_estat.pare = (self, (columna, fila))
 
                     nou_estat.tablero[columna][fila] = 1
-                    nou_estat.pes += 1
                     nou_estat.calcular_heuristica_fn()
                     estats_generats.append(nou_estat)
         
@@ -187,22 +183,6 @@ class EstatA(Estat):
                             # Devuelve 4 ya que no hay ninguna combinación posible
                             return 4
         return heuristica
-    
-    @property
-    def pes(self):
-        return self.__pes
-    
-    @pes.setter
-    def pes(self, pes):
-        self.__pes = pes
-
-    @property
-    def fn(self):
-        return self.__fn
-    
-    @fn.setter
-    def fn(self, fn):
-        self.__fn = fn
     
     def __lt__(self, other):
         return False

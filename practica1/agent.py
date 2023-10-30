@@ -24,14 +24,17 @@ class Agent(joc.Agent):
         pass
 
 class Estat:
-    def __init__(self, filas_columnas: tuple[int, int], pare=None):
+    def __init__(self, filas_columnas: tuple[int, int], tablero = None, pare=None):
         
         self.__lenTablero = filas_columnas[0]
-        self.__tablero = [[0 for _ in range(filas_columnas[0])] for _ in range(filas_columnas[1])]
+        if tablero is None:
+            self.__tablero = [[0 for _ in range(filas_columnas[0])] for _ in range(filas_columnas[1])]
+        else:
+            self.__tablero = tablero
         self.__pare = pare
 
     def __hash__(self):
-        return hash((self.__lenTablero, str(self.__tablero)))
+        return hash(str(self.__tablero))
 
     def __eq__(self, other):
         return self.__tablero == other.tablero

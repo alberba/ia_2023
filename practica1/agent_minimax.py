@@ -1,18 +1,20 @@
 import copy
+import time
 
 from practica1.agent import Agent, Estat
 from ia_2022 import entorn
 from practica1.entorn import Accio, SENSOR
 
-
-PROFUNDIDAD_MAXIMA = 2
+total_p_1 = 0
+PROFUNDIDAD_MAXIMA = 3
 class EstatMinimax(Estat):
-    def __init__(self, filas_columnas, pare=None, alpha=float('-inf'), beta=float('inf'), seguents_accions=None):
-        super().__init__(filas_columnas, pare)
+    def __init__(self, filas_columnas, torn_de_max, tablero=None, pare=None, alpha=float('-inf'), beta=float('inf'), seguents_accions=None):
+        super().__init__(filas_columnas, tablero, pare)
         self.__utilidad = 0
         self.__heuristica = 4
         self.alpha = alpha
         self.beta = beta
+        self.torn_de_max = torn_de_max
         if seguents_accions is None:
             seguents_accions = []
         self.seguents_accions = seguents_accions
@@ -21,17 +23,25 @@ class EstatMinimax(Estat):
     def es_meta(self):
         return self.heuristica == 0
     
-    def genera_fills(self, torn_de_max: bool) -> list['EstatMinimax']:
+    def genera_fills(self) -> list['EstatMinimax']:
         estats_generats = []
 
         for columna in range(self.lenTablero):
             for fila in range(self.lenTablero):
                 if self.tablero[columna][fila] == 0:
-                    nou_estat = copy.deepcopy(self)
-                    nou_estat.pare = (self, (columna, fila))
-                    nou_estat.seguents_accions = [(columna, fila, 1 if torn_de_max else 2)]
+                    nou_estat = EstatMinimax(
+                        (self.lenTablero, self.lenTablero),
+                        not self.torn_de_max,
+                        [[cell for cell in row] for row in self.tablero],
+                        pare=(self, (columna, fila)),
+                        alpha=self.alpha,
+                        beta=self.beta,
+                        seguents_accions=self.seguents_accions + [(columna, fila, 1 if self.torn_de_max else 2)],
 
-                    nou_estat.tablero[columna][fila] = 1 if torn_de_max else 2
+
+                    )
+
+                    nou_estat.tablero[columna][fila] = 1 if self.torn_de_max else 2
 
                     nou_estat.calcular_heuristica()
                     estats_generats.append(nou_estat)
@@ -119,11 +129,13 @@ class EstatMinimax(Estat):
                 return 4   
             
         # Si se trata de una ficha del jugador max, sumamos a la utilidad, si no, restamos
-        if self.tablero[columna][fila] == 1:
-            self.utilidad += (4 - heuristica)
+        if heuristica < 3:
+            if self.tablero[columna][fila] == 1:
+                self.utilidad += 10 ** (3 - heuristica)
 
-        else:
-            self.utilidad -= (4 - heuristica)
+            else:
+                self.utilidad -= 10 ** (3 - heuristica)
+        
 
         return heuristica
     
@@ -191,12 +203,13 @@ class EstatMinimax(Estat):
             else:
                 return 4   
             
-        # Si se trata de una ficha del jugador max, sumamos a la utilidad, si no, restamos
-        if self.tablero[columna][fila] == 1:
-            self.utilidad += (4 - heuristica)
+         # Si se trata de una ficha del jugador max, sumamos a la utilidad, si no, restamos
+        if heuristica < 3:
+            if self.tablero[columna][fila] == 1:
+                self.utilidad += 10 ** (3 - heuristica)
 
-        else:
-            self.utilidad -= (4 - heuristica)
+            else:
+                self.utilidad -= 10 ** (3 - heuristica)
             
         return heuristica
                 
@@ -269,11 +282,12 @@ class EstatMinimax(Estat):
                 return 4   
             
         # Si se trata de una ficha del jugador max, sumamos a la utilidad, si no, restamos
-        if self.tablero[columna][fila] == 1:
-            self.utilidad += (4 - heuristica)
+        if heuristica < 3:
+            if self.tablero[columna][fila] == 1:
+                self.utilidad += 10 ** (3 - heuristica)
 
-        else:
-            self.utilidad -= (4 - heuristica)
+            else:
+                self.utilidad -= 10 ** (3 - heuristica)
             
         return heuristica
     
@@ -346,11 +360,12 @@ class EstatMinimax(Estat):
                 return 4   
             
         # Si se trata de una ficha del jugador max, sumamos a la utilidad, si no, restamos
-        if self.tablero[columna][fila] == 1:
-            self.utilidad += (4 - heuristica)
+        if heuristica < 3:
+            if self.tablero[columna][fila] == 1:
+                self.utilidad += 10 ** (3 - heuristica)
 
-        else:
-            self.utilidad -= (4 - heuristica)
+            else:
+                self.utilidad -= 10 ** (3 - heuristica)
             
         return heuristica
 
@@ -377,70 +392,91 @@ class AgentMinimax(Agent):
 
     def __init__(self, nom):
         super(AgentMinimax, self).__init__(nom)
-        # Accions estará formado por una lista de acciones de manera cronológica estructurada de la siguiente forma:
-        # [(columna, fila, fichaJugador), (columna, fila, fichaJugador), ...]
+        
         self.__tancats = set()
 
-    def minimax(self, estat: EstatMinimax, torn_de_max: bool, profunditat_actual: int) -> tuple[bool, EstatMinimax]:
+    def minimax(self, estat: EstatMinimax, profunditat_actual: int) -> EstatMinimax:
+        global total_p_1
         if profunditat_actual == PROFUNDIDAD_MAXIMA:
             # Calcula la utilidad del estado
-            if not torn_de_max:
+            if not estat.torn_de_max:
                 estat.beta = estat.utilidad
             else:
                 estat.alpha = estat.utilidad
-            return (False, estat)
+            return estat
         
         elif estat.es_meta():
             # La utilidad de una terminal sera de 1000 o -1000
-            if not torn_de_max:
+            if not estat.torn_de_max:
                 estat.beta = 1000
             else:
                 estat.alpha = -1000
-            return (True, estat)
+            return estat
         
-        mejor_estado = None
-        
-        for estat_fill in estat.genera_fills(torn_de_max):
-            is_finished, estat_minimax = self.minimax(estat_fill, not torn_de_max, profunditat_actual + 1)
-            if torn_de_max:
+        hijos = estat.genera_fills()
+        aux = False
+        tiempo = time.time()
+        for estat_fill in hijos:
+            if estat_fill in self.__tancats:
+                continue
+
+            estat_minimax = self.minimax(estat_fill, profunditat_actual + 1)
+            if estat_minimax is None:
+                continue
+            aux = True
+            if estat.torn_de_max:
                 # El turno del hijo es min y el del padre es max
                 if estat.alpha < estat_fill.beta and not estat_fill.beta == float('inf'):
                     estat.alpha = estat_fill.beta
-                    mejor_estado = estat_fill
+                    millor_estat = estat_minimax
                 if estat.alpha >= estat.beta:
                     # Poda ya que como el padre del padre es min, no va a elegir al padre
+                    millor_estat = None
                     break
             else:
                 # El turno del hijo es max y el del padre es min
                 if estat.beta > estat_fill.alpha and not estat_fill.alpha == float('-inf'):
                     estat.beta = estat_fill.alpha
-                    mejor_estado = estat_fill
+                    millor_estat = estat_minimax
                 if estat.alpha >= estat.beta:
                     # Podamos ya que como el padre del padre es max, no va a elegir al padre
+                    millor_estat = None
                     break
             self.__tancats.add(estat_fill)
-        if mejor_estado:
-            estat.seguents_accions += mejor_estado.seguents_accions
-            estat_minimax.seguents_accions = mejor_estado.seguents_accions + estat_minimax.seguents_accions
-        return (is_finished, estat_minimax)
+        total_p_1 += 1 if profunditat_actual == 1 else 0
+        print(f"Profundidad actual: {profunditat_actual}. Tiempo: {time.time() - tiempo} Total juegos P1: {total_p_1}") if profunditat_actual <= 1 else None
+        return millor_estat if aux else None
     
     def actua(
             self, percepcio: entorn.Percepcio
     ) -> entorn.Accio | tuple[entorn.Accio, object]:
-        estat = EstatMinimax(percepcio[SENSOR.MIDA])
+        ini = time.time()
+        estat = EstatMinimax(percepcio[SENSOR.MIDA], True)
         
         if AgentMinimax.accions is None:
-            finish, estat_minimax = self.minimax(estat, True, 0)
-            while not finish:
-                finish, estat_minimax = self.minimax(estat_minimax, True, 0)
-            accions = list()
-            iterador = estat_minimax
-            while iterador.pare is not None:
-                pare, accio = iterador.pare
+            estat_minimax = self.minimax(estat, 0)
+            while not estat_minimax.es_meta():
+                accions = list()
+                iterador = estat_minimax
+                while iterador.pare is not None:
+                    pare, accio = iterador.pare
 
-                accions.append(accio)
-                iterador = pare
-            AgentMinimax.accions = accions
+                    accions.append(accio)
+                    iterador = pare
+                if AgentMinimax.accions is None:
+                    AgentMinimax.accions = accions
+                else:
+                    AgentMinimax.accions += accions
+                estat = EstatMinimax(
+                    percepcio[SENSOR.MIDA], 
+                    estat_minimax.torn_de_max, 
+                    [[cell for cell in row] for row in estat_minimax.tablero], 
+                    alpha=float('-inf'), 
+                    beta=float('inf'), 
+                    )
+                estat_minimax = self.minimax(estat, 0)
+            
+        print("Tiempo:", time.time() - ini)
 
         if AgentMinimax.accions:
             accio = AgentMinimax.accions.pop()[:2]
