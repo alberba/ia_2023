@@ -24,11 +24,14 @@ class EstatMinimax(Estat):
         return self.heuristica == 0
     
     def genera_fills(self) -> list['EstatMinimax']:
+        """ Genera los posibles estados hijos del estado actual """
+
         estats_generats = []
 
         for columna in range(self.lenTablero):
             for fila in range(self.lenTablero):
                 if self.tablero[columna][fila] == 0:
+                    # Creamos un nuevo estado a partir del padre
                     nou_estat = EstatMinimax(
                         (self.lenTablero, self.lenTablero),
                         not self.torn_de_max,
@@ -49,11 +52,13 @@ class EstatMinimax(Estat):
         return estats_generats
     
     def calcular_heuristica (self):
+        """ Calcula la heuristica y la utilidad de un estado """
         # Reseteamos la utilidad
         self.utilidad = 0
         self.heuristica = 4
         for columna in range(self.lenTablero):
             for fila in range(self.lenTablero):
+                # Solo comprobaremos la heuristica a partir de las fichas colocadas
                 if self.tablero[columna][fila] == 1 or self.tablero[columna][fila] == 2:
                     h = self.mirar_combinacion(columna, fila)
                     if h < self.heuristica:
@@ -63,15 +68,21 @@ class EstatMinimax(Estat):
     # Cuando encuentra una pieza colocada, comprueba las siguientes 3 casillas horizontalmente, diagonalmente y verticalmente 
     # para calcular la heuristica correspondiente
     def mirar_combinacion(self, columna, fila) -> int:
-        
+        """ La función comprobará las combinaciones de 4 fichas a partir de la ficha colocada en la posición (columna, fila),
+        definiendo asi la heuristica con la combinación mas cerca de la solución final\n
+
+        SALIDA: La menor heuristica encontrada en todas las direcciones
+        """
         heuristica_menor = min(self.mirar_combinacionColumnas(columna, fila), self.mirar_combinacionFilas(columna, fila),
                                 self.mirar_combinacionDiagonalUp(columna, fila), self.mirar_combinacionDiagonalDown(columna, fila))
         return heuristica_menor
     
     def mirar_combinacionColumnas(self, columna: int, fila: int) -> int:
         heuristica = 3
+        distinta_ficha = False
       
         if columna + 3 < self.lenTablero:
+            # En el caso de q el offset este dentro del tablero, comprobamos las 3 siguientes casillas
             
             for i in range(columna + 1, columna + 4):
 
@@ -79,56 +90,65 @@ class EstatMinimax(Estat):
                     heuristica -= 1
 
                 elif self.tablero[columna][fila] != self.tablero[i][fila] and self.tablero[i][fila] != 0:
+                    # Ha encontrado una ficha del jugador contrario
 
                     diferencia = columna + 4 - i
+                    distinta_ficha = True
+                    break 
+                
+            if distinta_ficha:
+                # Si ha encontrado una ficha del jugador contrario, comprobamos las casillas anteriores
 
-                    if columna - diferencia >= 0:
+                if columna - diferencia >= 0:
 
-                        for m in range (columna - 1, columna - diferencia - 1, -1):
+                    for m in range (columna - 1, columna - diferencia - 1, -1):
 
-                            if self.tablero[columna][fila] == self.tablero[m][fila]:
-                                heuristica -= 1
-                            elif self.tablero[columna][fila] != self.tablero[i][fila] and self.tablero[i][fila] != 0:
-                                return 4
-                            
-                    
-                    else:
-                        return 4
+                        if self.tablero[columna][fila] == self.tablero[m][fila]:
+                            heuristica -= 1
+                        elif self.tablero[columna][fila] != self.tablero[i][fila] and self.tablero[i][fila] != 0:
+                            # En el caso de que en las casillas anteriores tambien esta la ficha del jugador contrario,
+                            # quiere decir que no existe ninguna combinación
+                            return 4
+                        
+                
+                else:
+                    return 4
                 
 
         else:
+            # En el caso de que el offset se salga del tablero, miramos cuantas casillas se sale y miraremos tantas casillas
+            # anteriores como casillas hayan quedado fuera
 
             diferencia = columna + 3 - self.lenTablero
-            primer_indice = 0
-            
+            heuristica = 4
+
+            for i in range(columna, self.lenTablero):
+
+                if self.tablero[columna][fila] == self.tablero[i][fila]:
+                    heuristica -= 1
+
+                elif self.tablero[columna][fila] != self.tablero[i][fila] and self.tablero[i][fila] != 0:
+                    diferencia += self.lenTablero - i
+                    break
+
+            # Comprueba que por el otro lado tampoco se salga del tablero
             if columna - diferencia >= 0:
 
-                for i in range(columna - 1, columna - diferencia + 1, -1):
+                # Recorre las casillas que le quedan por mirar
+                for i in range(columna - 1, columna - diferencia - 1, -1):
 
-                    if self.tablero[i][fila] == 1 or self.tablero[i][fila] == 2:
-                        primer_indice = i + 1
-                        break
-
-                if primer_indice == 0:
-                    primer_indice = columna - diferencia
-
-                else:
-
-                    if primer_indice + 3 > self.lenTablero:
-                        return 4
-                    
-                    else:
+                    if self.tablero[columna][fila] == self.tablero[i][fila]:
+                        heuristica -= 1
                         
-                        for i in range(columna + 1, primer_indice + 4):
-                            
-                            if self.tablero[columna][fila] == self.tablero[i][fila]:
-                                heuristica -= 1
-                                
-                            elif self.tablero[columna][fila] != self.tablero[i][fila] and self.tablero[i][fila] != 0:
-                                return 4   
+                    elif self.tablero[columna][fila] != self.tablero[i][fila] and self.tablero[i][fila] != 0:
+                        # No caben 4 casillas del jugador en esta dirección, por tanto no hay ninguna combinación
+                        return 4
+
+
                             
             else:
-                return 4   
+                # No caben 4 casillas en esta dirección, por tanto no hay ninguna combinación
+                return heuristica   
             
         # Si se trata de una ficha del jugador max, sumamos a la utilidad, si no, restamos
         if heuristica < 3:
@@ -145,65 +165,67 @@ class EstatMinimax(Estat):
                 
     def mirar_combinacionFilas(self, columna: int, fila: int) -> int:
         heuristica = 3
+        distinta_ficha = False
       
         if fila + 3 < self.lenTablero:
 
             for i in range(fila + 1, fila + 4):
 
+                # Hay una ficha del mismo jugador
                 if self.tablero[columna][fila] == self.tablero[columna][i]:
                     heuristica -= 1
 
                 elif self.tablero[columna][fila] != self.tablero[columna][i] and self.tablero[columna][i] != 0:
+                    # Ha encontrado una ficha del jugador contrario
 
+                    distinta_ficha = True
                     diferencia = fila + 4 - i
+                    break
 
-                    if fila - diferencia >= 0:
+            if distinta_ficha:
+                # Si ha encontrado una ficha del jugador contrario, comprobamos las casillas anteriores
 
-                        for m in range (fila - 1, fila - diferencia - 1, -1):
+                if fila - diferencia >= 0:
 
-                            if self.tablero[columna][fila] == self.tablero[columna][m]:
-                                heuristica -= 1
+                    for m in range (fila - 1, fila - diferencia - 1, -1):
 
-                            elif self.tablero[columna][fila] != self.tablero[columna][m] and self.tablero[columna][m] != 0:
-                                return 4  
-                    
-                    else:
-                        return 4
+                        if self.tablero[columna][fila] == self.tablero[columna][m]:
+                            heuristica -= 1
+
+                        elif self.tablero[columna][fila] != self.tablero[columna][m] and self.tablero[columna][m] != 0:
+                            return 4  
+                
+                else:
+                    return 4
                 
 
         else:
+            # En el caso de que el offset se salga del tablero, miramos cuantas casillas se sale y miraremos tantas casillas
+            # anteriores como casillas hayan quedado fuera
 
             diferencia = fila + 3 - self.lenTablero
-            primer_indice = 0
+            heuristica = 4
+
+            for i in range(fila, self.lenTablero):
+                if self.tablero[columna][fila] == self.tablero[columna][i]:
+                    heuristica -= 1
+                elif self.tablero[columna][fila] != self.tablero[columna][i] and self.tablero[columna][i] != 0:
+                    diferencia += self.lenTablero - i
+                    break
             
+            # Comprueba que por el otro lado tampoco se salga del tablero
             if fila - diferencia >= 0:
 
-                for i in range(fila - 1, fila - diferencia + 1, -1):
+                for i in range(fila - 1, fila - diferencia - 1, -1):
 
-                    if self.tablero[columna][i] == 1 or self.tablero[columna][i] == 2:
-                        primer_indice = i + 1
-                        break
+                    if self.tablero[columna][fila] == self.tablero[columna][i]:
+                        heuristica -= 1
 
-                if primer_indice == 0:
-                    primer_indice = fila - diferencia
-
-                else:
-
-                    if primer_indice + 3 > self.lenTablero:
+                    elif self.tablero[columna][fila] != self.tablero[columna][i] and self.tablero[columna][i] != 0:
                         return 4
-                    
-                    else:
-                        
-                        for i in range(fila + 1, primer_indice + 4):
-                            
-                            if self.tablero[columna][fila] == self.tablero[columna][i]:
-                                heuristica -= 1
-                                
-                            elif self.tablero[columna][fila] != self.tablero[columna][i] and self.tablero[columna][i] != 0:
-                                return 4   
                             
             else:
-                return 4   
+                return heuristica  
             
          # Si se trata de una ficha del jugador max, sumamos a la utilidad, si no, restamos
         if heuristica < 3:
@@ -217,6 +239,7 @@ class EstatMinimax(Estat):
                 
     def mirar_combinacionDiagonalDown(self, columna: int, fila: int) -> int:
         heuristica = 3
+        distinta_ficha = False
       
         if fila + 3 < self.lenTablero:
 
@@ -225,60 +248,60 @@ class EstatMinimax(Estat):
                 for i in range(1, 4):
 
                     if self.tablero[columna][fila] == self.tablero[columna + i][fila + i]:
+                        # Hay una ficha del mismo jugador
                         heuristica -= 1
 
                     elif self.tablero[columna][fila] != self.tablero[columna + i][fila + i] and self.tablero[columna + i][fila + i] != 0:
+                        # Ha encontrado una ficha del jugador contrario
 
                         diferencia = fila + 4 - i
+                        distinta_ficha = True
+                        break
 
-                        if fila - diferencia >= 0:
+                if distinta_ficha:
+                    # Si ha encontrado una ficha del jugador contrario, comprobamos las casillas anteriores
 
-                            if columna - diferencia >= 0:
+                    if fila - diferencia >= 0:
 
-                                for m in range (-1, - diferencia - 1, -1):
+                        if columna - diferencia >= 0:
 
-                                    if self.tablero[columna][fila] == self.tablero[columna + m][fila + m]:
-                                        heuristica -= 1
+                            for m in range (-1, - diferencia - 1, -1):
 
-                                    elif self.tablero[columna][fila] != self.tablero[columna + m][fila + m] and self.tablero[columna + m][fila + m] != 0:
-                                        return 4  
-                        
-                        else:
-                            return 4
-                
+                                if self.tablero[columna][fila] == self.tablero[columna + m][fila + m]:
+                                    heuristica -= 1
+
+                                elif self.tablero[columna][fila] != self.tablero[columna + m][fila + m] and self.tablero[columna + m][fila + m] != 0:
+                                    return 4  
+                    
+                    else:
+                        return 4
 
         else:
 
-            diferencia = fila + 3 - self.lenTablero
-            primer_indice = 0
-            
+            diferencia = fila + 3 - self.lenTablero if fila + 3 >= self.lenTablero else columna + 3 - self.lenTablero
+            heuristica = 4
+
+            for i in range(4):
+
+                if columna + i >= self.lenTablero or fila + i >= self.lenTablero or (self.tablero[columna][fila] != self.tablero[columna + i][fila + i] and self.tablero[columna + i][fila + i] != 0):
+                    diferencia = 4 - i
+                    break
+
+                if self.tablero[columna][fila] == self.tablero[columna + i][fila + i]:
+                    heuristica -= 1
+
             if fila - diferencia >= 0:
 
-                if columna - diferencia >= 0:
+                if columna - diferencia >= 0:          
 
-                    for i in range(-1, -diferencia + 1, -1):
-
-                        if self.tablero[columna + i][fila + i] == 1 or self.tablero[columna + i][fila + i] == 2:
-                            primer_indice = i + 1
-                            break
-
-                    if primer_indice == 0:
-                        primer_indice = fila - diferencia
-
-                    else:
-
-                        if primer_indice + 3 > self.lenTablero:
-                            return 4
-                        
-                        else:
-                            
-                            for i in range(1, primer_indice + 4):
+                    for i in range(-1, -diferencia - 1, -1):
+                        if self.tablero[columna][fila] == self.tablero[columna + i][fila + i]:
+                            heuristica -= 1
+                        elif self.tablero[columna][fila] != self.tablero[columna + i][fila + i] and self.tablero[columna + i][fila + i] != 0:
+                            return 4   
                                 
-                                if self.tablero[columna][fila] == self.tablero[columna + i][fila + i]:
-                                    heuristica -= 1
-                                    
-                                elif self.tablero[columna][fila] != self.tablero[columna + i][fila + i] and self.tablero[columna + i][fila + i] != 0:
-                                    return 4   
+                else:
+                    return 4
                             
             else:
                 return 4   
@@ -295,68 +318,62 @@ class EstatMinimax(Estat):
     
     def mirar_combinacionDiagonalUp(self, columna: int, fila: int) -> int:
         heuristica = 3
+        distinta_ficha = False
       
-        if fila - 3 < self.lenTablero:
+        if fila - 3 >= 0 and columna + 3 < self.lenTablero:
 
-            if columna + 3 < self.lenTablero:
+            for i in range(1, 4):
 
-                for i in range(1, 4):
+                if self.tablero[columna][fila] == self.tablero[columna + i][fila - i]:
+                    # Hay una ficha del mismo jugador
+                    heuristica -= 1
 
-                    if self.tablero[columna][fila] == self.tablero[columna + i][fila - i]:
-                        heuristica -= 1
+                elif self.tablero[columna][fila] != self.tablero[columna + i][fila - i] and self.tablero[columna + i][fila - i] != 0:
+                    # Ha encontrado una ficha del jugador contrario
 
-                    elif self.tablero[columna][fila] != self.tablero[columna + i][fila - i] and self.tablero[columna + i][fila - i] != 0:
+                    diferencia = columna + 4 - i
+                    distinta_ficha = True
+                    break
 
-                        diferencia = columna + 4 - i
+            if distinta_ficha:
+                # Si ha encontrado una ficha del jugador contrario, comprobamos las casillas anteriores
 
-                        if fila + diferencia >= 0:
+                if fila + diferencia < self.lenTablero and columna - diferencia >= 0:
 
-                            if columna - diferencia >= 0:
+                    for m in range (-1, - diferencia - 1, -1):
 
-                                for m in range (-1, - diferencia - 1, -1):
+                        if self.tablero[columna][fila] == self.tablero[columna + m][fila - m]:
+                            heuristica -= 1
 
-                                    if self.tablero[columna][fila] == self.tablero[columna + m][fila - m]:
-                                        heuristica -= 1
-
-                                    elif self.tablero[columna][fila] != self.tablero[columna + m][fila - m] and self.tablero[columna + m][fila - m] != 0:
-                                        return 4  
-                        
-                        else:
-                            return 4
+                        elif self.tablero[columna][fila] != self.tablero[columna + m][fila - m] and self.tablero[columna + m][fila - m] != 0:
+                            return 4  
                 
+                else:
+                    return 4
+            
 
         else:
 
-            diferencia = columna + 3 - self.lenTablero
-            primer_indice = 0
+            diferencia = columna + 3 - self.lenTablero if columna + 3 >= self.lenTablero else 3 - fila
+            heuristica = 4
+
+            for i in range(4):
+
+                if columna + i >= self.lenTablero or fila - i >= 0 or (self.tablero[columna][fila] != self.tablero[columna + i][fila - i] and self.tablero[columna + i][fila - i] != 0):
+                    diferencia = 4 - i
+                    break
+
+                elif self.tablero[columna][fila] == self.tablero[columna + i][fila - i]:
+                    heuristica -= 1
             
-            if fila + diferencia >= 0:
+            if fila + diferencia < self.lenTablero and columna - diferencia >= 0:
 
-                if columna - diferencia >= 0:
+                for i in range(-1, -diferencia - 1, -1):
 
-                    for i in range(-1, -diferencia + 1, -1):
-
-                        if self.tablero[columna + i][fila - i] == 1 or self.tablero[columna + i][fila - i] == 2:
-                            primer_indice = i + 1
-                            break
-
-                    if primer_indice == 0:
-                        primer_indice = columna - diferencia
-
-                    else:
-
-                        if primer_indice + 3 > self.lenTablero or primer_indice - 3 <= 0:
-                            return 4
-                        
-                        else:
-                            
-                            for i in range(1, primer_indice + 4):
-                                
-                                if self.tablero[columna][fila] == self.tablero[columna + i][fila - i]:
-                                    heuristica -= 1
-                                    
-                                elif self.tablero[columna][fila] != self.tablero[columna + i][fila - i] and self.tablero[columna + i][fila - i] != 0:
-                                    return 4   
+                    if self.tablero[columna][fila] == self.tablero[columna + i][fila - i]:
+                        heuristica -= 1
+                    elif self.tablero[columna][fila] != self.tablero[columna + i][fila - i] and self.tablero[columna + i][fila - i] != 0:
+                        return 4   
                             
             else:
                 return 4   
@@ -451,7 +468,7 @@ class AgentMinimax(Agent):
                     break
             self.__tancats.add(estat_fill)
         total_p_1 += 1 if profunditat_actual == 1 else 0
-        #print(f"Profundidad actual: {profunditat_actual}. Tiempo: {time.time() - tiempo} Total juegos P1: {total_p_1}") if profunditat_actual <= 1 else None
+        print(f"Profundidad actual: {profunditat_actual}. Tiempo: {time.time() - tiempo} Total juegos P1: {total_p_1}") if profunditat_actual <= 1 else None
             
         return millor_estat if aux else None
 
@@ -465,30 +482,36 @@ class AgentMinimax(Agent):
         if AgentMinimax.accions is None:
             estat_minimax = self.minimax(estat, 0)
             while not estat_minimax.es_meta():
-                accions = list()
-                iterador = estat_minimax
-                while iterador.pare is not None:
-                    pare, accio = iterador.pare
-
-                    accions.append(accio)
-                    iterador = pare
-                if AgentMinimax.accions is None:
-                    AgentMinimax.accions = accions
-                else:
-                    AgentMinimax.accions += accions
+                self.meter_accions(estat_minimax)
                 estat = EstatMinimax(
                     percepcio[SENSOR.MIDA], 
                     estat_minimax.torn_de_max, 
-                    [[cell for cell in row] for row in estat_minimax.tablero], 
+                    [[cell for cell in row] for row in estat_minimax.tablero],
                     alpha=float('-inf'), 
                     beta=float('inf'), 
                     )
                 estat_minimax = self.minimax(estat, 0)
             
-        #print("Tiempo:", time.time() - ini)
+            self.meter_accions(estat_minimax)
+            
+            print("Tiempo:", time.time() - ini)
+            print(AgentMinimax.accions)
 
         if AgentMinimax.accions:
-            accio = AgentMinimax.accions.pop()[:2]
+            accio = AgentMinimax.accions.pop(0)[:2]
             return Accio.POSAR, accio
         else:
             return Accio.ESPERAR
+        
+    def meter_accions(self, estat_minimax: EstatMinimax):
+        accions = list()
+        iterador = estat_minimax
+        while iterador.pare is not None:
+            pare, accio = iterador.pare
+
+            accions.insert(0, accio)
+            iterador = pare
+        if AgentMinimax.accions is None:
+            AgentMinimax.accions = accions
+        else:
+            AgentMinimax.accions += accions
