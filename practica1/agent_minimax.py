@@ -51,12 +51,14 @@ class EstatMinimax(Estat):
     def calcular_heuristica (self):
         # Reseteamos la utilidad
         self.utilidad = 0
+        self.heuristica = 4
         for columna in range(self.lenTablero):
             for fila in range(self.lenTablero):
                 if self.tablero[columna][fila] == 1 or self.tablero[columna][fila] == 2:
                     h = self.mirar_combinacion(columna, fila)
                     if h < self.heuristica:
                         self.heuristica = h
+        return None
 
     # Cuando encuentra una pieza colocada, comprueba las siguientes 3 casillas horizontalmente, diagonalmente y verticalmente 
     # para calcular la heuristica correspondiente
@@ -397,7 +399,15 @@ class AgentMinimax(Agent):
 
     def minimax(self, estat: EstatMinimax, profunditat_actual: int) -> EstatMinimax:
         global total_p_1
-        if profunditat_actual == PROFUNDIDAD_MAXIMA:
+        
+        if estat.es_meta():
+            # La utilidad de una terminal sera de 1000 o -1000
+            if not estat.torn_de_max:
+                estat.beta = 1000
+            else:
+                estat.alpha = -1000
+            return estat
+        elif profunditat_actual == PROFUNDIDAD_MAXIMA:
             # Calcula la utilidad del estado
             if not estat.torn_de_max:
                 estat.beta = estat.utilidad
@@ -405,20 +415,17 @@ class AgentMinimax(Agent):
                 estat.alpha = estat.utilidad
             return estat
         
-        elif estat.es_meta():
-            # La utilidad de una terminal sera de 1000 o -1000
-            if not estat.torn_de_max:
-                estat.beta = 1000
-            else:
-                estat.alpha = -1000
-            return estat
-        
         hijos = estat.genera_fills()
         aux = False
+        millor_estat = None
         tiempo = time.time()
         for estat_fill in hijos:
             if estat_fill in self.__tancats:
                 continue
+
+            # Heredamos alpha y beta
+            estat_fill.alpha = estat.alpha
+            estat_fill.beta = estat.beta
 
             estat_minimax = self.minimax(estat_fill, profunditat_actual + 1)
             if estat_minimax is None:
@@ -444,8 +451,10 @@ class AgentMinimax(Agent):
                     break
             self.__tancats.add(estat_fill)
         total_p_1 += 1 if profunditat_actual == 1 else 0
-        print(f"Profundidad actual: {profunditat_actual}. Tiempo: {time.time() - tiempo} Total juegos P1: {total_p_1}") if profunditat_actual <= 1 else None
+        #print(f"Profundidad actual: {profunditat_actual}. Tiempo: {time.time() - tiempo} Total juegos P1: {total_p_1}") if profunditat_actual <= 1 else None
+            
         return millor_estat if aux else None
+
     
     def actua(
             self, percepcio: entorn.Percepcio
@@ -476,7 +485,7 @@ class AgentMinimax(Agent):
                     )
                 estat_minimax = self.minimax(estat, 0)
             
-        print("Tiempo:", time.time() - ini)
+        #print("Tiempo:", time.time() - ini)
 
         if AgentMinimax.accions:
             accio = AgentMinimax.accions.pop()[:2]
