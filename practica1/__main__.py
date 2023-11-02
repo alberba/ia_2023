@@ -1,5 +1,5 @@
-import sys
-sys.path.append("c:\\Albert\\ia_2023")
+# Autores: Sergi Oliver y Albert Salom
+
 
 from practica1 import agent, joc
 from practica1.agent_profunditat import AgentProfunditat

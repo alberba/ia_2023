@@ -1,3 +1,5 @@
+# Autores: Sergi Oliver y Albert Salom
+
 import copy
 from queue import PriorityQueue
 
@@ -17,7 +19,7 @@ class AgentA(Agent):
         self.__tancats = set()
         estat_actual = None
 
-        self.__oberts.put((estat_inicial.heuristica, estat_inicial))
+        self.__oberts.put((estat_inicial.fn, estat_inicial))
         estat_actual = None
 
         while not self.__oberts.empty():
@@ -31,11 +33,11 @@ class AgentA(Agent):
             estats_fills = estat_actual.genera_fills()
             for estat in estats_fills:
                 if estat not in self.__tancats:
-                    self.__oberts.put((estat.heuristica, estat))
+                    self.__oberts.put((estat.fn, estat))
 
             self.__tancats.add(estat_actual)
         if estat_actual.es_meta():
-            estat_actual.calcular_heuristica_fn()
+            estat_actual.calcular_heuristica()
             accions = list()
             iterador = estat_actual
             while iterador.pare is not None:
@@ -48,7 +50,7 @@ class AgentA(Agent):
     def actua(
             self, percepcio: entorn.Percepcio
     ) -> entorn.Accio | tuple[entorn.Accio, object]:
-        estat = EstatA(percepcio[SENSOR.MIDA])
+        estat = EstatA(percepcio[SENSOR.MIDA], 0)
         
         if self.__accions is None:
             self.cerca_A(estat)
@@ -61,136 +63,125 @@ class AgentA(Agent):
 
 
 class EstatA(Estat):
-    def __init__(self, filas_columnas, heuristica=4, pare=None):
-        super().__init__(filas_columnas, pare)
-        self.__heuristica = heuristica
+    def __init__(self, filas_columnas, pes, heuristica=4, pare=None):
+        super().__init__(filas_columnas, heuristica, pare)
+        self.__pes = pes
+        self.__fn = self.heuristica + pes
 
-
+    
     def es_meta(self):
+        """"Método para verificar si se ha alcanzado el estado objetivo"""
         return self.heuristica == 0
 
-    def calcular_heuristica_fn (self):
-        for columna in range(self.lenTablero):
-            for fila in range(self.lenTablero):
-                if self.tablero[columna][fila] == 1:
-                    h = self.mirar_combinacion(columna, fila)
-                    if h < self.heuristica:
-                        self.heuristica = h
-
     def genera_fills(self) -> list:
+        """"Método para generar nuevos estados"""
         estats_generats = []
 
         for columna in range(self.lenTablero):
             for fila in range(self.lenTablero):
                 if self.tablero[columna][fila] == 0:
+                    # Crea una copia del estado actual
                     nou_estat = copy.deepcopy(self)
                     nou_estat.pare = (self, (columna, fila))
-
+                    # Crea una ficha
                     nou_estat.tablero[columna][fila] = 1
-                    nou_estat.calcular_heuristica_fn()
+                    nou_estat.pes = self.pes + 1
+                    # Calcula la heurística
+                    nou_estat.calcular_heuristica()
                     estats_generats.append(nou_estat)
         
         return estats_generats
+    
+    def calcular_heuristica(self):
+        for columna in range(self.lenTablero):
+            for fila in range(self.lenTablero):
+                if self.tablero[columna][fila] == 1:
+                    self.mirar_combinacion(columna, fila)
+    
+        self.fn = self.heuristica + self.pes
 
-    # Cuando encuentra una pieza colocada, comprueba las siguientes 3 casillas horizontalmente, diagonalmente y verticalmente 
-    # para calcular la heuristica correspondiente
     def mirar_combinacion(self, columna, fila) -> int:
-        heuristica_menor = min(self.mirar_combinacionColumnas(columna, fila), self.mirar_combinacionFilas(columna, fila),
-                                self.mirar_combinacionDiagonalUp(columna, fila), self.mirar_combinacionDiagonalDown(columna, fila))
-        return heuristica_menor
-    
-    def mirar_combinacionColumnas(self, columna: int, fila: int) -> int:
-        heuristica = 4
-      
-        if columna + 3 < self.lenTablero:
-            primera_ficha = 0
+        """ La función comprobará las combinaciones de 4 fichas a partir de la ficha colocada en la posición (columna, fila),
+        definiendo asi la heuristica con la combinación mas cerca de la solución final\n
 
-            for i in range(columna, columna + 4):
-                if primera_ficha == 0 and self.tablero[i][fila] != 0:
-                    primera_ficha = self.tablero[i][fila]
+        SALIDA: La menor heuristica encontrada en todas las direcciones
+        """
+        delta = ((1, 0), (0, 1), (1, 1), (1, -1))
 
-                if primera_ficha != 0:
+        for i in delta:
 
-                    if primera_ficha == self.tablero[i][fila]:
+            heuristica = 3
+            distinta_ficha = False
+            over_limit = False
+            diferencia_x = 0
+            diferencia_y = 0
+
+            for offset in range(1, 4):
+                offset_x = offset * i[0]
+                offset_y = offset * i[1]
+                if columna + offset_x < self.lenTablero and fila + offset_y < self.lenTablero:
+
+                    if self.tablero[columna][fila] == self.tablero[columna + offset_x][fila + offset_y]:
                         heuristica -= 1
 
-                    elif primera_ficha != self.tablero[i][fila] and self.tablero[i][fila] != 0:
-                        return 4
+                    elif self.tablero[columna][fila] == self.tablero[columna + offset_x][fila + offset_y] and self.tablero[columna + offset_x][fila + offset_y] != 0:
+                        # Ha encontrado una ficha del jugador contrario
+                        distinta_ficha = True
+                        if i[0] > 0:
+                            diferencia_x = 4 - offset_x
+                        elif i[0] < 0:
+                            diferencia_x = 4 + offset_x
+                        if i[1] > 0:
+                            diferencia_y = 4 - offset_y
+                        elif i[1] < 0:
+                            diferencia_y = 4 + offset_y
+                        break
+                else:
+                    # Ha superado el límite del tablero
+                    over_limit = True
+                    if i[0] > 0:
+                        diferencia_x = columna + 4 - self.lenTablero
+                    elif i[0] < 0:
+                        diferencia_x = 4 - columna - 1
+                    if i[1] > 0:
+                        diferencia_y = fila + 4 - self.lenTablero
+                    elif i[1] < 0:
+                        diferencia_y = 4 - fila - 1
+                    break
 
-        return heuristica
-                
-    def mirar_combinacionFilas(self, columna: int, fila: int) -> int:
-        heuristica = 4
+            if distinta_ficha or over_limit:
+                diferencia = max(abs(diferencia_x), abs(diferencia_y))
+                if 0 <= columna - diferencia * i[0] < self.lenTablero and 0 <= fila - diferencia * i[1] < self.lenTablero:
 
-        if fila + 3 < self.lenTablero:
-            primera_ficha = 0
-
-            for j in range(fila, fila + 4):
-                if primera_ficha == 0 and self.tablero[columna][j] != 0:
-                    primera_ficha = self.tablero[columna][j]
-
-                if primera_ficha != 0:
-
-                    if primera_ficha == self.tablero[columna][j]:
-                        heuristica -= 1
-
-                    elif primera_ficha != self.tablero[columna][j] and self.tablero[columna][j] != 0:
-                        # Devuelve 4 ya que no hay ninguna combinación posible
-                        return 4
-
-        return heuristica
-                
-    def mirar_combinacionDiagonalDown(self, columna: int, fila: int) -> int:
-        heuristica = 4
-        
-        if fila + 3 < self.lenTablero:
-            
-            if columna + 3 < self.lenTablero:
-                primera_ficha = 0
-                
-                for i in range(0, 4):
-                    if primera_ficha == 0 and self.tablero[columna + i][fila + i] != 0:
-                        primera_ficha = self.tablero[columna + i][fila + i]
-
-                    if primera_ficha != 0:
-                    
-                        if primera_ficha == self.tablero[columna + i][fila + i]:
+                    for m in range (1, diferencia + 1):
+                        offset_x = m * i[0]
+                        offset_y = m * i[1]
+                        if self.tablero[columna][fila] == self.tablero[columna - offset_x][fila - offset_y]:
                             heuristica -= 1
-
-                        elif primera_ficha != self.tablero[columna + i][fila + i] and self.tablero[columna + i][fila + i] != 0:
-                            # Devuelve 4 ya que no hay ninguna combinación posible
+                        elif self.tablero[columna][fila] != self.tablero[columna - offset_x][fila - offset_y] and self.tablero[columna - offset_x][fila - offset_y] != 0:
+                            # No caben 4 casillas del jugador en esta dirección, por tanto no hay ninguna combinación
                             return 4
-        return heuristica
-    
-    def mirar_combinacionDiagonalUp(self, columna: int, fila: int) -> int:
-        heuristica = 4
-        
-        if fila - 3 >= 0:
+                else:
+                    return 4      
 
-            if columna + 3 < self.lenTablero:
-                primera_ficha = 0
-
-                for i in range(0, 4):
-                    if primera_ficha == 0 and self.tablero[columna + i][fila - i] != 0:
-                        primera_ficha = self.tablero[columna + i][fila - i]
-
-                    if primera_ficha != 0:
-                        
-                        if primera_ficha == self.tablero[columna + i][fila - i]:
-                            heuristica -= 1
-
-                        elif primera_ficha != self.tablero[columna + i][fila - i] and self.tablero[columna + i][fila - i] != 0:
-                            # Devuelve 4 ya que no hay ninguna combinación posible
-                            return 4
-        return heuristica
+            if heuristica < self.heuristica:
+                self.heuristica = heuristica
     
     def __lt__(self, other):
-        return False
+        return self.fn < other.fn if self.fn != other.fn else self.heuristica < other.heuristica
     
     @property
-    def heuristica(self):
-        return self.__heuristica
+    def pes(self):
+        return self.__pes
     
-    @heuristica.setter
-    def heuristica(self, heuristica):
-        self.__heuristica = heuristica
+    @pes.setter
+    def pes(self, pes):
+        self.__pes = pes
+
+    @property
+    def fn(self):
+        return self.__fn
+    
+    @fn.setter
+    def fn(self, fn):
+        self.__fn = fn

@@ -1,3 +1,5 @@
+# Autores: Sergi Oliver y Albert Salom
+
 import copy
 import time
 
@@ -9,14 +11,10 @@ total_p_1 = 0
 PROFUNDIDAD_MAXIMA = 3
 class EstatMinimax(Estat):
     def __init__(self, filas_columnas, torn_de_max, tablero=None, pare=None):
-        super().__init__(filas_columnas, tablero, pare)
+        super().__init__(filas_columnas, 4, tablero, pare)
         self.__utilidad = 0
-        self.__heuristica = 4
-        self.torn_de_max = torn_de_max
+        self.__torn_de_max = torn_de_max
 
-
-    def es_meta(self):
-        return self.heuristica == 0
     
     def genera_fills(self) -> list['EstatMinimax']:
         """ Genera los posibles estados hijos del estado actual """
@@ -41,7 +39,7 @@ class EstatMinimax(Estat):
         
         return estats_generats
     
-    def calcular_heuristica (self):
+    def calcular_heuristica(self):
         """ Calcula la heuristica y la utilidad de un estado """
         # Reseteamos la utilidad
         self.utilidad = 0
@@ -50,12 +48,12 @@ class EstatMinimax(Estat):
             for fila in range(self.lenTablero):
                 # Solo comprobaremos la heuristica a partir de las fichas colocadas
                 if self.tablero[columna][fila] == 1 or self.tablero[columna][fila] == 2:
-                    self.mirar_combinacionGod(columna, fila)
+                    self.mirar_combinacion(columna, fila)
 
         return None
 
 
-    def mirar_combinacionGod(self, columna, fila) -> int:
+    def mirar_combinacion(self, columna, fila) -> int:
         """ La función comprobará las combinaciones de 4 fichas a partir de la ficha colocada en la posición (columna, fila),
         definiendo asi la heuristica con la combinación mas cerca de la solución final\n
 
@@ -118,22 +116,20 @@ class EstatMinimax(Estat):
                             return 4
                 else:
                     return 4      
-            if heuristica < 3:
-                if self.tablero[columna][fila] == 1:
-                    self.utilidad += 10 ** (3 - heuristica)
-
-                else:
-                    self.utilidad -= 10 ** (3 - heuristica)
+                
+            self.add_utilidad(heuristica, columna, fila)
+            
             if heuristica < self.heuristica:
                 self.heuristica = heuristica
 
-    @property
-    def heuristica(self):
-        return self.__heuristica
-    
-    @heuristica.setter
-    def heuristica(self, heuristica):
-        self.__heuristica = heuristica
+    def add_utilidad(self, heuristica, columna, fila):
+        if heuristica < 3:
+            if self.tablero[columna][fila] == 1:
+                self.utilidad += 10 ** (3 - heuristica)
+
+            else:
+                self.utilidad -= 10 ** (3 - heuristica)
+
     
     @property
     def utilidad(self):
@@ -142,6 +138,14 @@ class EstatMinimax(Estat):
     @utilidad.setter
     def utilidad(self, utilidad):
         self.__utilidad = utilidad
+
+    @property
+    def torn_de_max(self):
+        return self.__torn_de_max
+    
+    @torn_de_max.setter
+    def torn_de_max(self, torn_de_max):
+        self.__torn_de_max = torn_de_max
 
 class AgentMinimax(Agent):
 
@@ -169,7 +173,6 @@ class AgentMinimax(Agent):
             return estat, estat.utilidad
         
         fills_y_puntuacio = []
-        tiempo = time.time()
 
         for estat_fill in estat.genera_fills():
             if estat_fill in self.__tancats:
@@ -186,9 +189,6 @@ class AgentMinimax(Agent):
             else:
                 beta = min(beta, puntuacio_fill[1])
         
-        total_p_1 += 1 if profunditat_actual == 1 else 0
-        print(f"Profundidad actual: {profunditat_actual}. Tiempo: {time.time() - tiempo} Total juegos P1: {total_p_1}") if profunditat_actual <= 1 else None
-        
         if estat.torn_de_max:
             return self.max(fills_y_puntuacio)
         else:
@@ -200,12 +200,14 @@ class AgentMinimax(Agent):
     def actua(
             self, percepcio: entorn.Percepcio
     ) -> entorn.Accio | tuple[entorn.Accio, object]:
-        ini = time.time()
         estat = EstatMinimax(percepcio[SENSOR.MIDA], True)
         
         if AgentMinimax.accions is None:
+
+            ini = time.time()
             estat_minimax, _ = self.minimax(estat, float("-inf"), float("inf"), 0)
             while not estat_minimax.es_meta():
+
                 estat = EstatMinimax(
                     percepcio[SENSOR.MIDA], 
                     estat_minimax.torn_de_max, 
@@ -226,8 +228,11 @@ class AgentMinimax(Agent):
             return Accio.ESPERAR
         
     def meter_accions(self, estat_minimax: EstatMinimax):
+        """ Mete las acciones del estado minimax en la variable de clase accions"""
+
         accions = list()
         iterador = estat_minimax
+
         while iterador.pare is not None:
             pare, accio = iterador.pare
 
@@ -236,6 +241,7 @@ class AgentMinimax(Agent):
             AgentMinimax.accions = accions
     
     def max(self, puntuacio: list[tuple[EstatMinimax, int]]):
+        """ Devuelve el estado minimax con la mayor puntuación """
         max = float("-inf")
         millor_estat = None
 
@@ -246,6 +252,7 @@ class AgentMinimax(Agent):
         return millor_estat, max
     
     def min(self, puntuacio: list[EstatMinimax, int]):
+        """ Devuelve el estado minimax con la menor puntuación"""
         min = float("inf")
         millor_estat = None
         for estat, score in puntuacio:

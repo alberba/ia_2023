@@ -1,3 +1,5 @@
+# Autores: Sergi Oliver y Albert Salom
+
 """
 ClauPercepcio:
     POSICIO = 0
@@ -24,7 +26,7 @@ class Agent(joc.Agent):
         pass
 
 class Estat:
-    def __init__(self, filas_columnas: tuple[int, int], tablero = None, pare=None):
+    def __init__(self, filas_columnas: tuple[int, int], heuristica=4, tablero = None, pare=None):
         
         self.__lenTablero = filas_columnas[0]
         if tablero is None:
@@ -32,6 +34,19 @@ class Estat:
         else:
             self.__tablero = tablero
         self.__pare = pare
+        self.__heuristica = heuristica
+
+    def es_meta(self):
+        """ Comprueba si el estado actual es un estado terminal """
+        return self.heuristica == 0
+
+    def es_ficha_contraria(self, offset_x, offset_y, columna, fila) -> bool:
+        """ Comprueba si la ficha en la posición (columna + offset_x, fila + offset_y) es del jugador contrario """
+        return self.tablero[columna][fila] == self.tablero[columna + offset_x][fila + offset_y] and self.tablero[columna + offset_x][fila + offset_y] != 0
+    
+    def es_ficha_igual(self, offset_x, offset_y, columna, fila) -> bool:
+        """ Comprueba si la ficha en la posición (columna + offset_x, fila + offset_y) es del mismo jugador """
+        return self.tablero[columna][fila] == self.tablero[columna + offset_x][fila + offset_y]
 
     def __hash__(self):
         return hash(str(self.__tablero))
@@ -42,20 +57,18 @@ class Estat:
     def __lt__(self, other):
         return False
 
-    def es_meta(self):
-        return self.__heuristica == 0
-
     @abc.abstractmethod
-    def calcular_heuristica_fn(self) -> int:
+    def mirar_combinacion(self, columna, fila):
+        pass
+    
+    @abc.abstractmethod
+    def calcular_heuristica(self) -> int:
         pass
 
     @abc.abstractmethod
     def genera_fills(self) -> list:
         pass
     
-    @property
-    def tablero(self):
-        return self.__tablero
     
     @property
     def pare(self):
@@ -80,3 +93,11 @@ class Estat:
     @tablero.setter
     def tablero(self, tablero):
         self.__tablero = tablero
+    
+    @property
+    def heuristica(self):
+        return self.__heuristica
+    
+    @heuristica.setter
+    def heuristica(self, heuristica):
+        self.__heuristica = heuristica
