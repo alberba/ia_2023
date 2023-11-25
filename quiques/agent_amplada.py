@@ -1,6 +1,6 @@
 from ia_2022 import entorn
 from quiques.agent import Barca, Estat
-from quiques.entorn import AccionsBarca, SENSOR
+from quiques.entorn import SENSOR
 
 
 class BarcaAmplada(Barca):
